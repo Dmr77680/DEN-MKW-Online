@@ -23,7 +23,9 @@
 
 #include "common/fs/ryujinx_compat.h"
 #include "main_window.h"
+#include <QCoreApplication>
 #include <QPointer>
+#include <cstdlib>
 #include <thread>
 #include "common/httplib.h"
 #ifdef _WIN32
@@ -944,6 +946,42 @@ void MainWindow::WebBrowserRequestExit() {
 #endif
 }
 
+// Online players counter: asks our own server (GET /status -> {"online": N, "rooms": R}) from a
+// background thread, then updates the label on the GUI thread. Shows "Online: ?" if unreachable.
+void MainWindow::UpdateOnlinePlayers() {
+    QPointer<QLabel> label = online_players_label;
+    std::thread([label] {
+        int online = -1;
+        try {
+            httplib::Client cli("2.29.165.22", 8088);
+            cli.set_connection_timeout(3);
+            cli.set_read_timeout(3);
+            if (auto res = cli.Get("/status"); res && res->status == 200) {
+                const std::string& body = res->body;
+                const auto key = body.find("\"online\"");
+                if (key != std::string::npos) {
+                    const auto colon = body.find(':', key);
+                    if (colon != std::string::npos) {
+                        online = std::atoi(body.c_str() + colon + 1);
+                    }
+                }
+            }
+        } catch (...) {
+            online = -1;
+        }
+        const QString text = online >= 0 ? QStringLiteral("Online: %1").arg(online)
+                                         : QStringLiteral("Online: ?");
+        QMetaObject::invokeMethod(
+            qApp,
+            [label, text] {
+                if (label) {
+                    label->setText(text);
+                }
+            },
+            Qt::QueuedConnection);
+    }).detach();
+}
+
 void MainWindow::InitializeWidgets() {
     render_window = new GRenderWindow(this, input_subsystem);
     render_window->hide();
@@ -1008,29 +1046,9 @@ void MainWindow::InitializeWidgets() {
     online_players_label->setToolTip(tr("Players currently connected to the online server."));
     online_players_label->setContentsMargins(4, 0, 4, 0);
     statusBar()->addPermanentWidget(online_players_label);
-    connect(&online_players_timer, &QTimer::timeout, this, [this] {
-        QPointer<QLabel> label = online_players_label;
-        std::thread([label] {
-            QString text = QStringLiteral("Online: ?");
-            httplib::Client cli("2.29.165.22", 8088);
-            cli.set_connection_timeout(3);
-            cli.set_read_timeout(3);
-            if (auto res = cli.Get("/status"); res && res->status == 200) {
-                const auto& b = res->body;
-                const auto pos = b.find("\"online\"");
-                if (pos != std::string::npos) {
-                    const auto colon = b.find(':', pos);
-                    if (colon != std::string::npos) {
-                        text = QStringLiteral("Online: %1").arg(std::atoi(b.c_str() + colon + 1));
-                    }
-                }
-            }
-            QMetaObject::invokeMethod(
-                qApp, [label, text] { if (label) label->setText(text); }, Qt::QueuedConnection);
-        }).detach();
-    });
+    connect(&online_players_timer, &QTimer::timeout, this, [this] { UpdateOnlinePlayers(); });
     online_players_timer.start(30000);
-    QTimer::singleShot(1000, this, [this] { Q_EMIT online_players_timer.timeout(); });
+    QTimer::singleShot(1000, this, [this] { UpdateOnlinePlayers(); });
 
     firmware_label = new QLabel();
     firmware_label->setObjectName(QStringLiteral("FirmwareLabel"));
