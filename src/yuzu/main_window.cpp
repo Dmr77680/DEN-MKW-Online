@@ -23,6 +23,9 @@
 
 #include "common/fs/ryujinx_compat.h"
 #include "main_window.h"
+#include <QPointer>
+#include <thread>
+#include "common/httplib.h"
 #include "network/network.h"
 #include "qt_common/discord/discord.h"
 #include "ui_main.h"
