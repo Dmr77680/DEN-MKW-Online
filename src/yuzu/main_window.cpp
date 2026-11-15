@@ -26,6 +26,11 @@
 #include <QPointer>
 #include <thread>
 #include "common/httplib.h"
+#ifdef _WIN32
+// httplib pulls in windows.h, whose macros rename these methods used further down
+#undef CreateDirectory
+#undef CreateFile
+#endif
 #include "network/network.h"
 #include "qt_common/discord/discord.h"
 #include "ui_main.h"
