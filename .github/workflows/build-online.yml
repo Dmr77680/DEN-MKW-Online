@@ -23,7 +23,7 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
@@ -45,10 +45,10 @@ jobs:
         run: ./tools/windows/install-vulkan-sdk.ps1
 
       - name: Set up sccache
-        uses: mozilla-actions/sccache-action@v0.0.9
+        uses: mozilla-actions/sccache-action@v0.0.11
 
       - name: Cache CPM downloads
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .cache/cpm
           key: cpm-online-${{ runner.os }}-${{ hashFiles('cpmfile.json', 'CMakeLists.txt', 'src/**/CMakeLists.txt') }}
@@ -86,7 +86,7 @@ jobs:
           windeployqt --release --no-translations --no-compiler-runtime build/release/bin/eglantine.exe
 
       - name: Upload
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: eglantine-online-${{ github.sha }}
           path: build/release/bin/
