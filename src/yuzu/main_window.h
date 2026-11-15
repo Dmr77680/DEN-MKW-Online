@@ -530,6 +530,8 @@ private:
     QLabel* shader_building_label = nullptr;
     QLabel* res_scale_label = nullptr;
     QLabel* emu_speed_label = nullptr;
+    QLabel* online_players_label = nullptr;
+    QTimer online_players_timer;
     QLabel* game_fps_label = nullptr;
     QLabel* emu_frametime_label = nullptr;
     QLabel* tas_label = nullptr;
