@@ -1030,7 +1030,7 @@ void MainWindow::InitializeWidgets() {
         }).detach();
     });
     online_players_timer.start(30000);
-    QTimer::singleShot(1000, &online_players_timer, &QTimer::timeout);
+    QTimer::singleShot(1000, this, [this] { Q_EMIT online_players_timer.timeout(); });
 
     firmware_label = new QLabel();
     firmware_label->setObjectName(QStringLiteral("FirmwareLabel"));
